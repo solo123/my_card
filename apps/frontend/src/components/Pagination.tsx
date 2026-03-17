@@ -39,7 +39,7 @@ export default function Pagination({
           >
             &lt;
           </button>
-          <span className="rounded bg-blue-500 px-2 py-1 text-sm text-white">{page}</span>
+          <span className="rounded-lg bg-primary px-2 py-1 text-sm font-medium text-white">{page}</span>
           <button
             type="button"
             disabled={!canNext}

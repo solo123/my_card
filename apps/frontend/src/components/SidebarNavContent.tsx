@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const menuConfig = [
+export const menuConfig = [
   {
     key: "wallet",
     label: "钱包",
@@ -63,17 +63,37 @@ function NavItem({
   href,
   label,
   active,
+  onNavigate,
+  dark,
 }: {
   href: string;
   label: string;
   active: boolean;
+  onNavigate?: () => void;
+  dark?: boolean;
 }) {
+  if (dark) {
+    return (
+      <Link
+        href={href}
+        onClick={onNavigate}
+        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+          active
+            ? "bg-primary text-white font-medium"
+            : "text-gray-300 hover:bg-white/10 hover:text-white"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       className={`block rounded px-3 py-2 text-sm transition-colors ${
         active
-          ? "bg-purple-100 text-purple-800 font-medium"
+          ? "bg-primary/15 text-primary font-medium"
           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
       }`}
     >
@@ -82,7 +102,14 @@ function NavItem({
   );
 }
 
-export default function Sidebar({ open }: { open: boolean }) {
+/** 侧边栏导航树；dark 时用于深色底侧栏（白/灰字 + teal 激活） */
+export default function SidebarNavContent({
+  onNavigate,
+  dark = false,
+}: {
+  onNavigate?: () => void;
+  dark?: boolean;
+}) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     wallet: true,
@@ -96,49 +123,50 @@ export default function Sidebar({ open }: { open: boolean }) {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const sectionClass = dark
+    ? "text-gray-300 hover:bg-white/10"
+    : "text-gray-700 hover:bg-gray-100";
+  const borderClass = dark ? "border-white/10" : "border-gray-200";
+  const chevronClass = dark ? "text-gray-400" : "text-gray-500";
+
   return (
-    <aside
-      className={`fixed left-0 top-14 z-20 h-[calc(100vh-3.5rem)] w-56 border-r border-gray-200 bg-[#f8f8f8] transition-transform duration-200 md:translate-x-0 ${
-        open ? "translate-x-0" : "-translate-x-full"
-      }`}
-    >
-      <nav className="flex flex-col gap-1 overflow-y-auto p-3">
-        {menuConfig.map((section) => {
-          const isExpanded = expanded[section.key] ?? true;
-          const hasActive = section.children.some((c) => pathname === c.href);
-          return (
-            <div key={section.key}>
-              <button
-                type="button"
-                onClick={() => toggle(section.key)}
-                className="flex w-full items-center justify-between rounded px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+    <nav className="flex flex-col gap-0.5 px-3">
+      {menuConfig.map((section) => {
+        const isExpanded = expanded[section.key] ?? true;
+        return (
+          <div key={section.key}>
+            <button
+              type="button"
+              onClick={() => toggle(section.key)}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium ${sectionClass}`}
+            >
+              {section.label}
+              <svg
+                className={`h-4 w-4 ${chevronClass} transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {section.label}
-                <svg
-                  className={`h-4 w-4 text-gray-500 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isExpanded && (
-                <div className="ml-2 mt-1 flex flex-col gap-0.5 border-l border-gray-200 pl-2">
-                  {section.children.map((item) => (
-                    <NavItem
-                      key={item.href}
-                      href={item.href}
-                      label={item.label}
-                      active={pathname === item.href}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-    </aside>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isExpanded && (
+              <div className={`ml-2 mt-0.5 flex flex-col gap-0.5 border-l ${borderClass} pl-2`}>
+                {section.children.map((item) => (
+                  <NavItem
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    active={pathname === item.href}
+                    onNavigate={onNavigate}
+                    dark={dark}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
   );
 }

@@ -39,7 +39,7 @@ const columns = [
     key: "cvv",
     label: "查看CVV密码",
     render: () => (
-      <button type="button" className="flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-sm text-blue-600 hover:bg-blue-100">
+      <button type="button" className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-sm text-primary hover:bg-primary/20 font-medium">
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
         查看CVV密码
       </button>
@@ -50,7 +50,7 @@ const columns = [
     key: "alias",
     label: "卡别名",
     render: (row: Row) => (
-      <span className="flex cursor-pointer items-center gap-1 text-blue-500 hover:underline">
+      <span className="flex cursor-pointer items-center gap-1 text-primary hover:underline font-medium">
         {row.alias}
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
       </span>
@@ -62,7 +62,7 @@ const columns = [
     label: "操作",
     render: () => (
       <div className="flex gap-1">
-        <button type="button" className="rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600">
+        <button type="button" className="rounded-lg bg-primary px-2 py-1 text-sm font-medium text-white hover:bg-primary-hover">
           √更多
         </button>
         <button type="button" className="rounded border border-gray-300 bg-white px-2 py-1 text-sm hover:bg-gray-50">详情</button>
@@ -77,7 +77,7 @@ export default function CardManagementPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-800">卡管理</h1>
-        <button type="button" className="flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">
+        <button type="button" className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           数据刷新
         </button>
@@ -100,8 +100,8 @@ export default function CardManagementPage() {
             <option value="">请选择申请状态</option>
           </select>
         </div>
-        <button type="button" className="rounded border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">重置</button>
-        <button type="button" className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600">查询</button>
+        <button type="button" className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">重置</button>
+        <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">查询</button>
       </div>
       <DataTable<Row> columns={columns} data={mockData} />
       <Pagination total={5} page={1} pageSize={10} />

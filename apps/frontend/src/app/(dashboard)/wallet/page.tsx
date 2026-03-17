@@ -11,14 +11,14 @@ export default function WalletPage() {
             <button type="button" className="rounded border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">
               刷新
             </button>
-            <button type="button" className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600">
+            <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">
               充值
             </button>
           </div>
         </div>
         <div className="flex flex-col gap-6 lg:flex-row">
           {/* 虚拟卡 */}
-          <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 p-5 text-white shadow-lg">
+          <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-xl bg-gradient-to-br from-primary to-teal-600 p-5 text-white shadow-lg">
             <div className="absolute right-4 top-4 text-right text-xs opacity-90">ID: 32683826</div>
             <div className="mt-6 text-sm opacity-90">我的钱包账户</div>
             <div className="mt-2 font-mono text-lg tracking-widest">6666 **** **** 8888</div>
@@ -98,7 +98,7 @@ export default function WalletPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-800">最新公告</h2>
-            <Link href="/announcements" className="text-sm text-blue-500 hover:underline">
+            <Link href="/announcements" className="text-sm text-primary hover:underline font-medium">
               查看更多
             </Link>
           </div>
@@ -123,7 +123,7 @@ export default function WalletPage() {
               <button type="button" className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50">
                 退款
               </button>
-              <button type="button" className="rounded bg-blue-500 px-3 py-1.5 text-sm text-white hover:bg-blue-600">
+              <button type="button" className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-hover">
                 充值
               </button>
             </div>
@@ -148,7 +148,7 @@ export default function WalletPage() {
       {/* 我要转账 悬浮按钮 */}
       <Link
         href="/fund-transfer"
-        className="fixed bottom-8 right-8 flex items-center gap-2 rounded-full bg-purple-600 px-5 py-3 text-white shadow-lg hover:bg-purple-700"
+        className="fixed bottom-8 right-8 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-white shadow-lg hover:bg-primary-hover font-medium"
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
