@@ -3,20 +3,27 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // 占位：后续接入真实登录 API
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    router.push("/wallet");
+    setError(null);
+    try {
+      await login(account, password);
+      router.push("/wallet");
+    } catch (err: any) {
+      setError(err?.message || "登录失败");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,6 +41,11 @@ export default function LoginPage() {
         {/* 登录卡片 */}
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-6">账号登录</h2>
+          {error && (
+            <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="account" className="mb-1.5 block text-sm font-medium text-gray-700">

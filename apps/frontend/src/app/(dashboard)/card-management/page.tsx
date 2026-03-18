@@ -2,6 +2,9 @@
 
 import DataTable from "@/components/DataTable";
 import Pagination from "@/components/Pagination";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getCards } from "@/lib/api";
 
 type Row = {
   id: number;
@@ -14,9 +17,7 @@ type Row = {
   cardholder: string;
 };
 
-const mockData: Row[] = [
-  { id: 1566, subAccount: "", effectiveDate: "2026/02/23", expireDate: "2026/05/23", balance: "916.07", rechargeAmount: "-", alias: "点击设置别名", cardholder: "Sheri" },
-];
+// 数据来自后端
 
 const columns = [
   { key: "id", label: "ID" },
@@ -73,6 +74,16 @@ const columns = [
 ];
 
 export default function CardManagementPage() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const params = useMemo(() => {
+    const p = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    return p;
+  }, [page, pageSize]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["cards", page, pageSize, params.toString()],
+    queryFn: () => getCards(params),
+  });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -103,8 +114,8 @@ export default function CardManagementPage() {
         <button type="button" className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">重置</button>
         <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">查询</button>
       </div>
-      <DataTable<Row> columns={columns} data={mockData} />
-      <Pagination total={5} page={1} pageSize={10} />
+      <DataTable<Row> columns={columns} data={isLoading ? [] : ((data?.list ?? []) as Row[])} emptyText={isLoading ? "加载中..." : "暂无数据"} />
+      <Pagination total={data?.total ?? 0} page={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

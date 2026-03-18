@@ -22,6 +22,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Python
+__pycache__/
+.pycache/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
 # IDE
 .idea
 .vscode

@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getWalletOverview } from "@/lib/api";
 
 export default function WalletPage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["wallet-overview"],
+    queryFn: getWalletOverview,
+  });
   return (
     <div className="space-y-6">
       {/* 我的钱包 卡片区 */}
@@ -16,12 +24,17 @@ export default function WalletPage() {
             </button>
           </div>
         </div>
+        {isLoading ? (
+          <div className="text-gray-500 text-sm">加载中...</div>
+        ) : error ? (
+          <div className="text-red-600 text-sm">加载失败</div>
+        ) : (
         <div className="flex flex-col gap-6 lg:flex-row">
           {/* 虚拟卡 */}
           <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-xl bg-gradient-to-br from-primary to-teal-600 p-5 text-white shadow-lg">
-            <div className="absolute right-4 top-4 text-right text-xs opacity-90">ID: 32683826</div>
+            <div className="absolute right-4 top-4 text-right text-xs opacity-90">ID: {data?.walletAccountId}</div>
             <div className="mt-6 text-sm opacity-90">我的钱包账户</div>
-            <div className="mt-2 font-mono text-lg tracking-widest">6666 **** **** 8888</div>
+            <div className="mt-2 font-mono text-lg tracking-widest">{data?.maskedCardNumber}</div>
             <div className="mt-4 flex justify-between text-xs opacity-80">
               <span>Card holder</span>
               <span>MONTH/YEAR</span>
@@ -42,32 +55,33 @@ export default function WalletPage() {
           <div className="grid flex-1 grid-cols-2 gap-4 lg:grid-cols-3">
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-gray-500">我的钱包余额</div>
-              <div className="mt-1 text-xl font-semibold text-gray-900">$55.70</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">${data?.balance ?? "0.00"}</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-gray-500">冻结金额</div>
-              <div className="mt-1 text-xl font-semibold text-gray-900">$0.00</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">${data?.frozenAmount ?? "0.00"}</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <span className="text-green-500">↑</span> 充值总额
               </div>
-              <div className="mt-1 text-xl font-semibold text-gray-900">$77250.00</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">${data?.totalRecharge ?? "0.00"}</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <span className="text-orange-500">↓</span> 消费总额
               </div>
-              <div className="mt-1 text-xl font-semibold text-gray-900">$0.00</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">${data?.totalConsume ?? "0.00"}</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <span className="text-blue-500">→</span> 提理总额
               </div>
-              <div className="mt-1 text-xl font-semibold text-gray-900">$0.00</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">${data?.totalWithdraw ?? "0.00"}</div>
             </div>
           </div>
         </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

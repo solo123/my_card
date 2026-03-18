@@ -2,6 +2,9 @@
 
 import DataTable from "@/components/DataTable";
 import Pagination from "@/components/Pagination";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getRefundDetails } from "@/lib/api";
 
 const columns = [
   { key: "id", label: "ID" },
@@ -20,6 +23,16 @@ const columns = [
 ];
 
 export default function RefundDetailsPage() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const params = useMemo(() => {
+    const p = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    return p;
+  }, [page, pageSize]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["refund-details", page, pageSize, params.toString()],
+    queryFn: () => getRefundDetails(params),
+  });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -44,7 +57,7 @@ export default function RefundDetailsPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm text-gray-600">创建日期</label>
-          <div className="flex items-center gap-2">
+          <div className="flex items中心 gap-2">
             <input type="date" className="rounded border border-gray-300 px-3 py-2 text-sm" />
             <span className="text-gray-500">至</span>
             <input type="date" className="rounded border border-gray-300 px-3 py-2 text-sm" />
@@ -53,8 +66,8 @@ export default function RefundDetailsPage() {
         <button type="button" className="rounded border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">重置</button>
         <button type="button" className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600">搜索</button>
       </div>
-      <DataTable columns={columns} data={[]} emptyText="暂无数据" />
-      <Pagination total={3114} page={1} pageSize={10} />
+      <DataTable columns={columns} data={isLoading ? [] : (data?.list ?? [])} emptyText={isLoading ? "加载中..." : "暂无数据"} />
+      <Pagination total={data?.total ?? 0} page={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }
