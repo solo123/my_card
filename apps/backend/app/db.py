@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from . import config  # noqa: F401 - loads .env before DATABASE_URL is read
+
 import os
 from contextlib import contextmanager
 from typing import Iterator

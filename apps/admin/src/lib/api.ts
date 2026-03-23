@@ -17,7 +17,6 @@ function getRefreshToken() {
   return localStorage.getItem(REFRESH_KEY);
 }
 
-/** 清除本地 JWT（登出时调用） */
 export function clearAuth() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
@@ -94,8 +93,7 @@ export async function apiFetch<T>(
     data: null as unknown as T,
   }));
   if (!res.ok || json.code !== 0) {
-    const msg = json?.message || `${res.status} ${res.statusText}`;
-    throw new Error(msg);
+    throw new Error(json?.message || `${res.status} ${res.statusText}`);
   }
   return json.data;
 }
@@ -107,10 +105,7 @@ export async function login(account: string, password: string) {
     refreshToken: string;
     expiresIn: number;
     user: any;
-  }>("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ account, password }),
-  });
+  }>("/api/auth/login", { method: "POST", body: JSON.stringify({ account, password }) });
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, data.token);
     if (data.refreshToken) {
@@ -120,33 +115,10 @@ export async function login(account: string, password: string) {
   return data;
 }
 
-// Wallet
-export type WalletOverview = {
-  walletAccountId: string;
-  maskedCardNumber: string;
-  balance: string;
-  frozenAmount: string;
-  totalRecharge: string;
-  totalConsume: string;
-  totalWithdraw: string;
-  cardStats: Array<any>;
-};
-export const getWalletOverview = () => apiFetch<WalletOverview>("/api/wallet/overview");
-
-// Generic list response
 export type Paged<T> = { list: T[]; total: number };
 
-export const getRechargeRecords = (params: URLSearchParams) =>
-  apiFetch<Paged<any>>(`/api/cards/recharge-records?${params.toString()}`);
-
-export const getTransactions = (params: URLSearchParams) =>
-  apiFetch<Paged<any>>(`/api/cards/transactions?${params.toString()}`);
-
-export const getRefundDetails = (params: URLSearchParams) =>
-  apiFetch<Paged<any>>(`/api/cards/refund-details?${params.toString()}`);
+export const getUsers = (params: URLSearchParams) =>
+  apiFetch<Paged<any>>(`/api/account/sub-accounts?${params.toString()}`);
 
 export const getCards = (params: URLSearchParams) =>
   apiFetch<Paged<any>>(`/api/cards/list?${params.toString()}`);
-
-export const getCardholders = (params: URLSearchParams) =>
-  apiFetch<Paged<any>>(`/api/cards/cardholders?${params.toString()}`);

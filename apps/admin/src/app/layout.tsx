@@ -3,12 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "道生匯 - 卡台",
-  description: "道生匯钱包与卡管理后台",
-  icons: {
-    icon: "/tao.png",
-    apple: "/tao.png",
-  },
+  title: "道生匯 - Admin",
+  description: "道生匯后台管理（Admin）",
 };
 
 export default function RootLayout({
@@ -24,3 +20,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BrandMark } from "@/components/BrandMark";
 import { login } from "@/lib/api";
 
 export default function LoginPage() {
@@ -19,7 +18,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(account, password);
-      router.push("/wallet");
+      router.push("/users");
     } catch (err: any) {
       setError(err?.message || "登录失败");
     } finally {
@@ -30,14 +29,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* 品牌区 */}
         <div className="flex flex-col items-center mb-8">
-          <BrandMark size="md" />
-          <h1 className="mt-3 text-2xl font-semibold text-gray-800">道生匯</h1>
-          <p className="mt-1 text-sm text-gray-500">卡台管理后台</p>
+          <span className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-xl font-bold text-white shadow-md">
+            道
+          </span>
+          <h1 className="mt-3 text-2xl font-semibold text-gray-800">
+            道生匯 <span className="text-primary">Admin</span>
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">管理后台</p>
         </div>
 
-        {/* 登录卡片 */}
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-6">账号登录</h2>
           {error && (
@@ -75,10 +76,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="flex items-center justify-end">
-              <Link
-                href="/login/forgot"
-                className="text-sm text-primary hover:underline font-medium"
-              >
+              <Link href="/login/forgot" className="text-sm text-primary hover:underline font-medium">
                 忘记密码？
               </Link>
             </div>
@@ -91,14 +89,8 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-
-        <p className="mt-6 text-center text-sm text-gray-500">
-          登录即表示同意
-          <Link href="/terms" className="text-primary hover:underline font-medium"> 服务协议 </Link>
-          与
-          <Link href="/privacy" className="text-primary hover:underline font-medium"> 隐私政策</Link>
-        </p>
       </div>
     </div>
   );
 }
+

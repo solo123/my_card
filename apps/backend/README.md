@@ -7,10 +7,19 @@
 ```bash
 cd apps/backend
 pip install -r requirements.txt
+```
 
-# 配置数据库（默认值如下，可按需修改）
-export DATABASE_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:5432/my_card"
+在 **`apps/backend/.env`** 中配置（可参考同目录下的 `.env.example`）。启动时会自动加载；若已在 shell 中 `export` 同名变量，则以 **shell 优先**。
 
+```env
+DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/my_card
+JWT_SECRET=your-long-random-secret
+# 可选：access 默认 7200 秒，refresh 默认 7 天
+# JWT_ACCESS_EXPIRE_SECONDS=7200
+# JWT_REFRESH_EXPIRE_SECONDS=604800
+```
+
+```bash
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { BrandMark } from "@/components/BrandMark";
 import { useState } from "react";
 
 export default function ForgotPasswordPage() {
@@ -17,8 +16,10 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <BrandMark size="md" />
-          <h1 className="mt-3 text-2xl font-semibold text-gray-800">道生匯</h1>
+          <span className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-xl font-bold text-white shadow-md">
+            道
+          </span>
+          <h1 className="mt-3 text-2xl font-semibold text-gray-800">道生匯 Admin</h1>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
@@ -44,18 +45,12 @@ export default function ForgotPasswordPage() {
                   required
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-primary-hover"
-              >
+              <button type="submit" className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-primary-hover">
                 发送重置链接
               </button>
             </form>
           )}
-          <Link
-            href="/login"
-            className="mt-6 block text-center text-sm text-primary hover:underline font-medium"
-          >
+          <Link href="/login" className="mt-6 block text-center text-sm text-primary hover:underline font-medium">
             返回登录
           </Link>
         </div>
@@ -63,3 +58,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+

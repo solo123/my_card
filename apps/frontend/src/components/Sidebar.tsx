@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
+import { clearAuth } from "@/lib/api";
 import SidebarNavContent from "./SidebarNavContent";
 
 /** 桌面端固定侧边栏：始终显示，深色底、teal 高亮、底部登出与用户信息 */
@@ -9,9 +11,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 z-20 hidden h-screen w-56 flex-col border-r border-white/10 bg-[#1a1a1a] md:flex">
       {/* Logo */}
       <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-          道
-        </span>
+        <BrandMark size="sm" className="shadow-none" />
         <span className="text-lg font-semibold text-white">道生匯</span>
       </div>
 
@@ -24,6 +24,7 @@ export default function Sidebar() {
       <div className="shrink-0 border-t border-white/10 p-3">
         <Link
           href="/login"
+          onClick={() => clearAuth()}
           className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white/10 py-2 text-sm font-medium text-gray-200 hover:bg-white/15"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

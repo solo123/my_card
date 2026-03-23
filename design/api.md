@@ -14,7 +14,8 @@
 
 ### 1.2 认证方式
 
-- 登录后使用 **Bearer Token**：请求头 `Authorization: Bearer <token>`
+- 登录后使用 **JWT**：请求头 `Authorization: Bearer <accessToken>`
+- 刷新令牌使用 **refreshToken**（登录响应中返回），调用 `POST /api/auth/refresh` 时在请求头携带 `Authorization: Bearer <refreshToken>`
 - 除登录、忘记密码、发送重置链接等公开接口外，其余接口均需认证；未认证建议返回 `401`
 
 ### 1.3 统一响应结构
@@ -76,7 +77,8 @@
 
 ```json
 {
-  "token": "JWT 或会话 token",
+  "token": "JWT access token",
+  "refreshToken": "JWT refresh token",
   "expiresIn": 7200,
   "user": {
     "id": "用户ID",
@@ -90,7 +92,7 @@
 ### 2.2 登出
 
 - **接口**: `POST /api/auth/logout`
-- **说明**: 使当前 token 失效（可选，视后端实现）
+- **说明**: 需携带 access token；JWT 无状态下服务端可不维护黑名单，客户端删除本地 `token` / `refreshToken` 即可
 
 ### 2.3 忘记密码 - 发送重置链接
 
@@ -109,7 +111,15 @@
 
 - **接口**: `POST /api/auth/refresh`
 - **请求头**: `Authorization: Bearer <refreshToken>` 或按现有方案
-- **响应 data**: 同登录返回的 `token`、`expiresIn`
+- **响应 data**:
+
+```json
+{
+  "token": "新的 access token",
+  "refreshToken": "新的 refresh token（轮换签发）",
+  "expiresIn": 7200
+}
+```
 
 ### 2.5 获取当前用户信息
 

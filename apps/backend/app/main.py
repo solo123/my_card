@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
+import jwt
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -26,10 +28,15 @@ from pydantic import BaseModel, Field
 from sqlmodel import SQLModel, Session, select
 
 from .db import get_session, engine
+from .jwt_auth import (
+    ACCESS_EXPIRE_SECONDS,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
 from .models import (
     AccountSecurity,
     Announcement,
-    AuthToken,
     Card,
     Cardholder,
     FeeDetail,
@@ -86,13 +93,6 @@ def contains(value: Optional[str], needle: Optional[str]) -> bool:
     return needle.lower() in str(value).lower()
 
 
-def create_token(session: Session, user_id: str) -> str:
-    token = f"dev-{uuid4().hex}"
-    session.add(AuthToken(token=token, user_id=user_id))
-    session.commit()
-    return token
-
-
 def parse_bearer_token(authorization: Optional[str]) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
@@ -104,10 +104,18 @@ def get_current_user(
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     token = parse_bearer_token(authorization)
-    token_row = session.get(AuthToken, token)
-    if not token_row:
+    try:
+        payload = decode_token(token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
+    if payload.get("typ") != "access":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type")
+    user_id = payload.get("sub")
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
-    user = session.get(User, token_row.user_id)
+    user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
     return {"id": user.id, "account": user.account, "realName": user.real_name, "avatar": user.avatar}
@@ -225,11 +233,13 @@ async def login(payload: LoginRequest, session: Session = Depends(get_session)) 
     user = session.exec(select(User).where(User.account == payload.account)).first()
     if not user or user.password != payload.password:
         raise HTTPException(status_code=400, detail="账号或密码错误")
-    token = create_token(session, user.id)
+    access = create_access_token(user.id)
+    refresh = create_refresh_token(user.id)
     return api_ok(
         {
-            "token": token,
-            "expiresIn": 7200,
+            "token": access,
+            "refreshToken": refresh,
+            "expiresIn": ACCESS_EXPIRE_SECONDS,
             "user": {"id": user.id, "account": user.account, "realName": user.real_name, "avatar": user.avatar},
         }
     )
@@ -238,14 +248,8 @@ async def login(payload: LoginRequest, session: Session = Depends(get_session)) 
 @api.post("/auth/logout")
 async def logout(
     current_user: dict[str, Any] = Depends(get_current_user),
-    authorization: Optional[str] = Header(default=None),
-    session: Session = Depends(get_session),
 ) -> JSONResponse:
-    token = parse_bearer_token(authorization)
-    token_row = session.get(AuthToken, token)
-    if token_row:
-        session.delete(token_row)
-        session.commit()
+    # JWT 无状态：客户端删除 token 即可；服务端不维护黑名单（可按需扩展）
     return api_ok({"success": True, "userId": current_user["id"]})
 
 
@@ -255,18 +259,35 @@ async def forgot_password(_: ForgotPasswordRequest) -> JSONResponse:
 
 
 @api.post("/auth/refresh")
-async def refresh(
-    current_user: dict[str, Any] = Depends(get_current_user),
+async def refresh_token(
     authorization: Optional[str] = Header(default=None),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    old_token = parse_bearer_token(authorization)
-    old_row = session.get(AuthToken, old_token)
-    if old_row:
-        session.delete(old_row)
-        session.commit()
-    new_token = create_token(session, current_user["id"])
-    return api_ok({"token": new_token, "expiresIn": 7200})
+    """使用 `Authorization: Bearer <refreshToken>` 换取新的 access / refresh token。"""
+    raw = parse_bearer_token(authorization)
+    try:
+        payload = decode_token(raw)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
+    if payload.get("typ") != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
+    access = create_access_token(user.id)
+    refresh = create_refresh_token(user.id)
+    return api_ok(
+        {
+            "token": access,
+            "refreshToken": refresh,
+            "expiresIn": ACCESS_EXPIRE_SECONDS,
+        }
+    )
 
 
 @api.get("/auth/me")
