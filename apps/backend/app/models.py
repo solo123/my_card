@@ -7,8 +7,9 @@ from sqlmodel import Field, SQLModel
 
 
 class User(SQLModel, table=True):
-    id: str = Field(primary_key=True)
-    account: str = Field(index=True, unique=True)
+    id: int | None = Field(default=None, primary_key=True)
+    mobile: str = Field(index=True, unique=True)
+    email: str = Field(index=True, unique=True)
     password: str
     real_name: str
     avatar: Optional[str] = None
@@ -17,12 +18,13 @@ class User(SQLModel, table=True):
 
 class AuthToken(SQLModel, table=True):
     token: str = Field(primary_key=True)
-    user_id: str = Field(index=True)
+    user_id: int = Field(index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class WalletOverview(SQLModel, table=True):
+class Wallet(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     wallet_account_id: str
     masked_card_number: str
     balance: str
@@ -85,6 +87,7 @@ class TransferManagement(SQLModel, table=True):
 
 class Cardholder(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     sub_account: str
     first_name: str
     last_name: str
@@ -98,6 +101,8 @@ class Cardholder(SQLModel, table=True):
 
 class Card(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    wallet_id: int = Field(foreign_key="wallet.id", index=True)
     card_type: str  # visa/mastercard/3d/3d1 etc
     sub_account: str
     effective_date: str

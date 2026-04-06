@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="道">
+  <circle cx="16" cy="16" r="15" fill="#20B2AA"/>
+  <!-- 静态 favicon 无法可靠加载网络字体，用系统楷体类作书法感后备；字号尽量撑满圆 -->
+  <text
+    x="16"
+    y="16"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#fff"
+    font-family="KaiTi, STKaiti, 'AR PL UKai CN', 'Songti SC', serif"
+    font-size="20"
+    font-weight="400"
+  >道</text>
+</svg>

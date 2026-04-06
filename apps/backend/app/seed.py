@@ -15,9 +15,9 @@ from .models import (
     Transaction,
     TransferManagement,
     User,
+    Wallet,
     WalletAccountDetail,
     WalletCardStat,
-    WalletOverview,
 )
 
 
@@ -28,16 +28,21 @@ def seed_if_empty(session: Session) -> None:
 
     session.add(
         User(
-            id="u-1",
-            account="18759270938",
+            mobile="18612312301",
+            email="jimmy@example.com",
             password="dev",
             real_name="Jimmy",
             avatar=None,
         )
     )
+    session.flush()
+    user = session.exec(select(User)).first()
+    assert user is not None
+    uid = user.id
 
     session.add(
-        WalletOverview(
+        Wallet(
+            user_id=uid,
             wallet_account_id="32683826",
             masked_card_number="6666 **** **** 8888",
             balance="55.70",
@@ -47,6 +52,10 @@ def seed_if_empty(session: Session) -> None:
             total_withdraw="0.00",
         )
     )
+    session.flush()
+    wallet = session.exec(select(Wallet).where(Wallet.user_id == uid)).first()
+    assert wallet is not None
+    wallet_id = wallet.id
 
     session.add_all(
         [
@@ -144,6 +153,7 @@ def seed_if_empty(session: Session) -> None:
         [
             Cardholder(
                 id=389,
+                user_id=uid,
                 sub_account="44661234",
                 first_name="Sheri",
                 last_name="McKay",
@@ -156,6 +166,7 @@ def seed_if_empty(session: Session) -> None:
             ),
             Cardholder(
                 id=388,
+                user_id=uid,
                 sub_account="44661235",
                 first_name="Josh",
                 last_name="Aukes",
@@ -173,6 +184,8 @@ def seed_if_empty(session: Session) -> None:
         [
             Card(
                 id=1566,
+                user_id=uid,
+                wallet_id=wallet_id,
                 card_type="visa",
                 sub_account="",
                 effective_date="2026/02/23",
@@ -185,6 +198,8 @@ def seed_if_empty(session: Session) -> None:
             ),
             Card(
                 id=1567,
+                user_id=uid,
+                wallet_id=wallet_id,
                 card_type="mastercard",
                 sub_account="",
                 effective_date="2026/03/01",

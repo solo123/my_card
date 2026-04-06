@@ -24,6 +24,14 @@ export function clearAuth() {
   localStorage.removeItem(REFRESH_KEY);
 }
 
+/** 未授权时跳转登录（避免在 /login 上死循环） */
+function redirectToLoginIfNeeded() {
+  if (typeof window === "undefined") return;
+  const pathname = window.location.pathname || "";
+  if (pathname.startsWith("/login")) return;
+  window.location.assign("/login");
+}
+
 async function tryRefreshAccessToken(): Promise<boolean> {
   const refresh = getRefreshToken();
   if (!refresh) return false;
@@ -76,16 +84,19 @@ export async function apiFetch<T>(
     cache: "no-store",
   });
 
-  if (
-    res.status === 401 &&
-    retryOn401 &&
-    !path.startsWith("/api/auth/login") &&
-    path !== "/api/auth/refresh"
-  ) {
+  const skipAuthRedirect =
+    path.startsWith("/api/auth/login") || path === "/api/auth/refresh";
+
+  if (res.status === 401 && retryOn401 && !skipAuthRedirect) {
     const refreshed = await tryRefreshAccessToken();
     if (refreshed) {
       return apiFetch<T>(path, options, false);
     }
+  }
+
+  if (res.status === 401 && !skipAuthRedirect) {
+    clearAuth();
+    redirectToLoginIfNeeded();
   }
 
   const json: ApiEnvelope<T> = await res.json().catch(() => ({
@@ -148,5 +159,40 @@ export const getRefundDetails = (params: URLSearchParams) =>
 export const getCards = (params: URLSearchParams) =>
   apiFetch<Paged<any>>(`/api/cards/list?${params.toString()}`);
 
+export type CardholderRow = {
+  id: number;
+  subAccount: string;
+  firstName: string;
+  lastName: string;
+  countryCode: string;
+  state: string;
+  city: string;
+  address: string;
+  zip: string;
+  remark: string;
+};
+
+export type CardholderInput = Omit<CardholderRow, "id">;
+
 export const getCardholders = (params: URLSearchParams) =>
-  apiFetch<Paged<any>>(`/api/cards/cardholders?${params.toString()}`);
+  apiFetch<Paged<CardholderRow>>(`/api/cards/cardholders?${params.toString()}`);
+
+export const createCardholder = (body: CardholderInput) =>
+  apiFetch<CardholderRow>("/api/cards/cardholders", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const getCardholder = (id: number) =>
+  apiFetch<CardholderRow>(`/api/cards/cardholders/${id}`);
+
+export const updateCardholder = (id: number, body: Partial<CardholderInput>) =>
+  apiFetch<CardholderRow>(`/api/cards/cardholders/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+
+export const deleteCardholder = (id: number) =>
+  apiFetch<{ ok: boolean; id: number }>(`/api/cards/cardholders/${id}`, {
+    method: "DELETE",
+  });

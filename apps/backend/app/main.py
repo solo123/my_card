@@ -25,6 +25,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from sqlalchemy import or_
 from sqlmodel import SQLModel, Session, select
 
 from .db import get_session, engine
@@ -33,6 +34,7 @@ from .jwt_auth import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    sub_to_user_id,
 )
 from .models import (
     AccountSecurity,
@@ -48,8 +50,8 @@ from .models import (
     TransferManagement,
     User,
     WalletAccountDetail,
+    Wallet,
     WalletCardStat,
-    WalletOverview,
 )
 from .seed import seed_if_empty
 
@@ -112,13 +114,19 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
     if payload.get("typ") != "access":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type")
-    user_id = payload.get("sub")
-    if not user_id:
+    uid = sub_to_user_id(payload.get("sub"))
+    if uid is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
-    user = session.get(User, user_id)
+    user = session.get(User, uid)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
-    return {"id": user.id, "account": user.account, "realName": user.real_name, "avatar": user.avatar}
+    return {
+        "id": user.id,
+        "mobile": user.mobile,
+        "email": user.email,
+        "realName": user.real_name,
+        "avatar": user.avatar,
+    }
 
 
 class LoginRequest(BaseModel):
@@ -169,6 +177,18 @@ class PasswordUpdateRequest(BaseModel):
 
 class SecurityToggleRequest(BaseModel):
     enabled: bool
+
+
+class CardholderCreateRequest(BaseModel):
+    subAccount: str = Field(min_length=1)
+    firstName: str = Field(min_length=1)
+    lastName: str = Field(min_length=1)
+    countryCode: str = Field(min_length=1)
+    state: str = Field(min_length=1)
+    city: str = Field(min_length=1)
+    address: str = Field(min_length=1)
+    zip: str = Field(min_length=1)
+    remark: str = ""
 
 
 class CardholderUpdateRequest(BaseModel):
@@ -228,9 +248,12 @@ async def health() -> JSONResponse:
 
 @api.post("/auth/login")
 async def login(payload: LoginRequest, session: Session = Depends(get_session)) -> JSONResponse:
-    if not payload.account or not payload.password:
+    login_id = (payload.account or "").strip()
+    if not login_id or not payload.password:
         raise HTTPException(status_code=400, detail="account and password are required")
-    user = session.exec(select(User).where(User.account == payload.account)).first()
+    user = session.exec(
+        select(User).where(or_(User.mobile == login_id, User.email == login_id))
+    ).first()
     if not user or user.password != payload.password:
         raise HTTPException(status_code=400, detail="账号或密码错误")
     access = create_access_token(user.id)
@@ -240,7 +263,13 @@ async def login(payload: LoginRequest, session: Session = Depends(get_session)) 
             "token": access,
             "refreshToken": refresh,
             "expiresIn": ACCESS_EXPIRE_SECONDS,
-            "user": {"id": user.id, "account": user.account, "realName": user.real_name, "avatar": user.avatar},
+            "user": {
+                "id": user.id,
+                "mobile": user.mobile,
+                "email": user.email,
+                "realName": user.real_name,
+                "avatar": user.avatar,
+            },
         }
     )
 
@@ -273,10 +302,10 @@ async def refresh_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid refresh token")
     if payload.get("typ") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token type")
-    user_id = payload.get("sub")
-    if not user_id:
+    uid = sub_to_user_id(payload.get("sub"))
+    if uid is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
-    user = session.get(User, user_id)
+    user = session.get(User, uid)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
     access = create_access_token(user.id)
@@ -300,8 +329,8 @@ async def wallet_overview(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
-    overview = session.exec(select(WalletOverview)).first()
+    uid = current_user["id"]
+    overview = session.exec(select(Wallet).where(Wallet.user_id == uid)).first()
     if not overview:
         raise HTTPException(status_code=404, detail="wallet not found")
     stats = session.exec(select(WalletCardStat)).all()
@@ -476,25 +505,84 @@ async def list_cardholders(
     firstName: Optional[str] = None,
     lastName: Optional[str] = None,
 ) -> JSONResponse:
-    _ = current_user
-    rows = session.exec(select(Cardholder).order_by(Cardholder.id.desc())).all()
+    uid = current_user["id"]
+    rows = session.exec(
+        select(Cardholder).where(Cardholder.user_id == uid).order_by(Cardholder.id.desc())
+    ).all()
     items = [
-        {
-            "id": r.id,
-            "subAccount": r.sub_account,
-            "firstName": r.first_name,
-            "lastName": r.last_name,
-            "countryCode": r.country_code,
-            "state": r.state,
-            "city": r.city,
-            "address": r.address,
-            "zip": r.zip,
-            "remark": r.remark,
-        }
+        _cardholder_to_dict(r)
         for r in rows
         if contains(r.sub_account, subAccount) and contains(r.first_name, firstName) and contains(r.last_name, lastName)
     ]
     return api_ok(paginate(items, page, pageSize))
+
+
+def _cardholder_to_dict(r: Cardholder) -> dict[str, Any]:
+    return {
+        "id": r.id,
+        "subAccount": r.sub_account,
+        "firstName": r.first_name,
+        "lastName": r.last_name,
+        "countryCode": r.country_code,
+        "state": r.state,
+        "city": r.city,
+        "address": r.address,
+        "zip": r.zip,
+        "remark": r.remark,
+    }
+
+
+@api.post("/cards/cardholders")
+async def create_cardholder(
+    payload: CardholderCreateRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> JSONResponse:
+    uid = current_user["id"]
+    row = Cardholder(
+        user_id=uid,
+        sub_account=payload.subAccount,
+        first_name=payload.firstName,
+        last_name=payload.lastName,
+        country_code=payload.countryCode,
+        state=payload.state,
+        city=payload.city,
+        address=payload.address,
+        zip=payload.zip,
+        remark=payload.remark,
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return api_ok(_cardholder_to_dict(row))
+
+
+@api.get("/cards/cardholders/{cardholder_id}")
+async def get_cardholder(
+    cardholder_id: int,
+    current_user: dict[str, Any] = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> JSONResponse:
+    uid = current_user["id"]
+    row = session.get(Cardholder, cardholder_id)
+    if not row or row.user_id != uid:
+        raise HTTPException(status_code=404, detail="cardholder not found")
+    return api_ok(_cardholder_to_dict(row))
+
+
+@api.delete("/cards/cardholders/{cardholder_id}")
+async def delete_cardholder(
+    cardholder_id: int,
+    current_user: dict[str, Any] = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> JSONResponse:
+    uid = current_user["id"]
+    row = session.get(Cardholder, cardholder_id)
+    if not row or row.user_id != uid:
+        raise HTTPException(status_code=404, detail="cardholder not found")
+    session.delete(row)
+    session.commit()
+    return api_ok({"ok": True, "id": cardholder_id})
 
 
 @api.put("/cards/cardholders/{cardholder_id}")
@@ -504,9 +592,9 @@ async def update_cardholder(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
     row = session.get(Cardholder, cardholder_id)
-    if not row:
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="cardholder not found")
     data = payload.model_dump(exclude_unset=True)
     if "subAccount" in data:
@@ -530,20 +618,7 @@ async def update_cardholder(
     session.add(row)
     session.commit()
     session.refresh(row)
-    return api_ok(
-        {
-            "id": row.id,
-            "subAccount": row.sub_account,
-            "firstName": row.first_name,
-            "lastName": row.last_name,
-            "countryCode": row.country_code,
-            "state": row.state,
-            "city": row.city,
-            "address": row.address,
-            "zip": row.zip,
-            "remark": row.remark,
-        }
-    )
+    return api_ok(_cardholder_to_dict(row))
 
 
 @api.get("/cards/list")
@@ -557,8 +632,8 @@ async def list_cards(
     status: Optional[str] = None,
     cardType: Optional[str] = None,
 ) -> JSONResponse:
-    _ = current_user
-    rows = session.exec(select(Card).order_by(Card.id.desc())).all()
+    uid = current_user["id"]
+    rows = session.exec(select(Card).where(Card.user_id == uid).order_by(Card.id.desc())).all()
     items = [
         {
             "id": r.id,
@@ -587,9 +662,9 @@ async def get_card(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
     row = session.get(Card, card_id)
-    if not row:
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="card not found")
     return api_ok(
         {
@@ -613,9 +688,9 @@ async def get_card_balance(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
     row = session.get(Card, card_id)
-    if not row:
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="card not found")
     return api_ok({"balance": row.balance, "currency": "USD"})
 
@@ -626,8 +701,9 @@ async def get_card_cvv(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
-    if not session.get(Card, card_id):
+    uid = current_user["id"]
+    row = session.get(Card, card_id)
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="card not found")
     return api_ok({"cvv": "123"})
 
@@ -639,9 +715,9 @@ async def patch_card(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
     row = session.get(Card, card_id)
-    if not row:
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="card not found")
     data = payload.model_dump(exclude_unset=True)
     if "alias" in data and data["alias"] is not None:
@@ -675,9 +751,9 @@ async def cancel_card(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
     row = session.get(Card, card_id)
-    if not row:
+    if not row or row.user_id != uid:
         raise HTTPException(status_code=404, detail="card not found")
     row.status = "cancelled"
     session.add(row)
@@ -711,8 +787,13 @@ async def open_card(
     current_user: dict[str, Any] = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    _ = current_user
+    uid = current_user["id"]
+    wallet = session.exec(select(Wallet).where(Wallet.user_id == uid)).first()
+    if not wallet:
+        raise HTTPException(status_code=404, detail="wallet not found")
     card = Card(
+        user_id=uid,
+        wallet_id=wallet.id,
         card_type=payload.cardType,
         sub_account="",
         effective_date=payload.validityStart.replace("-", "/"),

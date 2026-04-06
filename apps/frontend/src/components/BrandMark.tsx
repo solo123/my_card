@@ -1,6 +1,4 @@
-import Image from "next/image";
-
-/** 道字品牌图标：`tao.png` 置于圆形 `bg-primary` 内；白底与主色融合（multiply），黑字保留。 */
+/** 品牌图标：圆形主色底，书法体「道」（马善政体，圆内尽量撑满）。 */
 export function BrandMark({
   size = "md",
   className = "",
@@ -8,20 +6,18 @@ export function BrandMark({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const box = size === "sm" ? "h-8 w-8 p-1" : "h-14 w-14 p-2";
-  const img = size === "sm" ? 26 : 44;
+  const box =
+    size === "sm"
+      ? // 32px 圆内约 20px 字高
+        "h-8 w-8 text-[1.28rem] leading-none"
+      : // 56px 圆内约 40px+ 字高，leading-none 避免行高留白
+        "h-14 w-14 text-[2.7rem] leading-none sm:text-[2.75rem]";
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary shadow-md ${box} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-normal text-white shadow-md [font-family:var(--font-dao-calligraphy),serif] ${box} ${className}`}
+      aria-label="道生匯"
     >
-      <Image
-        src="/tao.png"
-        alt="道生匯"
-        width={img}
-        height={img}
-        className="h-full w-full object-contain mix-blend-multiply"
-        priority
-      />
+      道
     </span>
   );
 }

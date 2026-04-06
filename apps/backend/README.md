@@ -23,6 +23,8 @@ JWT_SECRET=your-long-random-secret
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+`User.id` 为 PostgreSQL **自增整数**；`User` 含 **`mobile`、`email`（均唯一）**，登录请求体仍使用字段名 **`account`**，值为手机号或邮箱。若库表结构过旧，请迁移或清空后重建。
+
 ## 关键接口
 
 - `POST /api/auth/login`

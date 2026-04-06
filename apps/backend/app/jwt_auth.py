@@ -19,10 +19,24 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_access_token(user_id: str) -> str:
+def sub_to_user_id(sub: Any) -> int | None:
+    """Parse JWT `sub` claim to integer user id (accepts int or numeric string)."""
+    if sub is None:
+        return None
+    if isinstance(sub, int):
+        return sub
+    if isinstance(sub, str):
+        try:
+            return int(sub)
+        except ValueError:
+            return None
+    return None
+
+
+def create_access_token(user_id: int) -> str:
     now = _now()
     payload: dict[str, Any] = {
-        "sub": user_id,
+        "sub": str(user_id),
         "typ": "access",
         "iat": now,
         "exp": now + timedelta(seconds=ACCESS_EXPIRE_SECONDS),
@@ -30,10 +44,10 @@ def create_access_token(user_id: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: int) -> str:
     now = _now()
     payload: dict[str, Any] = {
-        "sub": user_id,
+        "sub": str(user_id),
         "typ": "refresh",
         "iat": now,
         "exp": now + timedelta(seconds=REFRESH_EXPIRE_SECONDS),

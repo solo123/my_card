@@ -81,8 +81,9 @@
   "refreshToken": "JWT refresh token",
   "expiresIn": 7200,
   "user": {
-    "id": "用户ID",
-    "account": "主账户标识（如手机号）",
+    "id": 1,
+    "mobile": "手机号",
+    "email": "邮箱",
     "realName": "真实姓名",
     "avatar": "头像 URL（可选）"
   }
@@ -129,8 +130,9 @@
 
 ```json
 {
-  "id": "用户ID",
-  "account": "主账户（如 18759270938）",
+  "id": 1,
+  "mobile": "手机号",
+  "email": "邮箱",
   "realName": "真实姓名",
   "avatar": "头像 URL（可选）"
 }
@@ -208,12 +210,28 @@
 - **参数**: `page`, `pageSize`, 可选 `subAccount`, `firstName`, `lastName`
 - **响应 list 项**: `id`, `subAccount`, `firstName`, `lastName`, `countryCode`, `state`, `city`, `address`, `zip`, `remark`
 
-### 4.2 持卡人编辑
+### 4.2 持卡人新建
+
+- **接口**: `POST /api/cards/cardholders`
+- **请求体**: `subAccount`, `firstName`, `lastName`, `countryCode`, `state`, `city`, `address`, `zip`, `remark`（均为必填字符串，`remark` 可为空串）
+- **响应 data**: 单条持卡人对象（同列表项）
+
+### 4.3 持卡人详情
+
+- **接口**: `GET /api/cards/cardholders/:id`
+- **响应 data**: 单条持卡人对象
+
+### 4.4 持卡人编辑
 
 - **接口**: `PUT /api/cards/cardholders/:id`
 - **请求体**: 与列表项字段一致（可部分更新）
 
-### 4.3 卡管理 - 卡片列表（分页+筛选）
+### 4.5 持卡人删除
+
+- **接口**: `DELETE /api/cards/cardholders/:id`
+- **响应 data**: 如 `{ "ok": true, "id": 123 }`
+
+### 4.6 卡管理 - 卡片列表（分页+筛选）
 
 - **接口**: `GET /api/cards/list`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`（支持模糊）, `balanceMin`, `status`
@@ -233,26 +251,26 @@
 }
 ```
 
-- 前端表格中「卡片余额」可脱敏展示，点击眼睛再拉取真实余额（见 4.4）。
+- 前端表格中「卡片余额」可脱敏展示，点击眼睛再拉取真实余额（见 4.8）。
 
-### 4.4 敏感信息 - 卡余额（按需拉取）
+### 4.8 敏感信息 - 卡余额（按需拉取）
 
 - **接口**: `GET /api/cards/:cardId/balance`
 - **说明**: 用于 SecretText 组件点击「显示」时请求真实余额；建议短时缓存（如 30s）或一次性展示后前端缓存
 - **响应 data**: `{ "balance": "916.07", "currency": "USD" }`
 
-### 4.5 敏感信息 - CVV（按需拉取）
+### 4.9 敏感信息 - CVV（按需拉取）
 
 - **接口**: `GET /api/cards/:cardId/cvv`
 - **说明**: 点击「查看CVV密码」时调用；建议一次性返回或短时有效
 - **响应 data**: `{ "cvv": "123" }` 或脱敏展示规则由后端定
 
-### 4.6 卡别名设置
+### 4.10 卡别名设置
 
 - **接口**: `PATCH /api/cards/:cardId`
 - **请求体**: `{ "alias": "新别名" }`
 
-### 4.7 开卡
+### 4.11 开卡
 
 - **接口**: `POST /api/cards/open`
 - **请求体**（与开卡表单一致）:
@@ -271,37 +289,37 @@
 
 - **响应 data**: `{ "cardId": 1567, "status": "pending" }` 或直接返回卡信息（视流程而定）
 
-### 4.8 充值记录
+### 4.12 充值记录
 
 - **接口**: `GET /api/cards/recharge-records`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`, `startDate`, `endDate`, `status`
 - **响应 list 项**: `id`, `subAccount`, `cardNumber`（可脱敏）, `requestId`, `orderNo`, `status`, `amount`, `createTime`
 
-### 4.9 交易明细
+### 4.13 交易明细
 
 - **接口**: `GET /api/cards/transactions`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`, `transactionType`, `status`, `startDate`, `endDate`
 - **响应 list 项**: `id`, `subAccount`, `cardNumber`, `transactionTime`, `currency`, `amount`, `baseCurrency`, `baseAmount`, `description`, `merchant`, `mcc`, `type`, `status`
 
-### 4.10 退款明细
+### 4.14 退款明细
 
 - **接口**: `GET /api/cards/refund-details`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`, `billDateStart`, `billDateEnd`, `createStart`, `createEnd`
 - **响应 list 项**: `id`, `subAccount`, `recordNo`, `cardNumber`, `cardId`, `billDate`, `txCurrency`, `txAmount`, `billCurrency`, `billAmount`, `fee`, `createTime`, `updateTime`
 
-### 4.11 手续费明细
+### 4.15 手续费明细
 
 - **接口**: `GET /api/cards/fee-details`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`, `startDate`, `endDate`
 - **响应 list 项**: 按业务定义（如 `id`, `cardNumber`, `feeType`, `amount`, `createdAt`）
 
-### 4.12 销卡列表
+### 4.16 销卡列表
 
 - **接口**: `GET /api/cards/cancelled`
 - **参数**: `page`, `pageSize`, 可选 `cardNumber`, `cancelStart`, `cancelEnd`
 - **响应 list 项**: 与卡管理列表类似，增加 `cancelledAt`、销卡原因等
 
-### 4.13 卡操作 - 详情 / 更多 / 删除（占位）
+### 4.17 卡操作 - 详情 / 更多 / 删除（占位）
 
 - **卡详情**: `GET /api/cards/:cardId` — 返回单卡完整信息（可脱敏策略与列表一致）
 - **删除/销卡**: `POST /api/cards/:cardId/cancel` 或 `DELETE /api/cards/:cardId` — 请求体可含 `reason`
@@ -388,7 +406,10 @@
 | 钱包     | POST | /api/wallet/fund-transfers | 新增资金划转 |
 | 钱包     | GET  | /api/wallet/transfer-management | 转账管理列表 |
 | 常规卡   | GET  | /api/cards/cardholders | 持卡人列表 |
+| 常规卡   | POST | /api/cards/cardholders | 持卡人新建 |
+| 常规卡   | GET  | /api/cards/cardholders/:id | 持卡人详情 |
 | 常规卡   | PUT  | /api/cards/cardholders/:id | 持卡人编辑 |
+| 常规卡   | DELETE | /api/cards/cardholders/:id | 持卡人删除 |
 | 常规卡   | GET  | /api/cards/list | 卡管理列表 |
 | 常规卡   | GET  | /api/cards/:cardId/balance | 卡余额（敏感） |
 | 常规卡   | GET  | /api/cards/:cardId/cvv | CVV（敏感） |
